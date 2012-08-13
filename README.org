@@ -1,0 +1,28 @@
+* What is it
+
+Small util starting a command in a separate (linux) filesystem namespace,
+optionally creating a number of bindmounts in that namespace.
+
+Not unlike the "untie" command.
+
+The goal is to be small and simple to not to be too scary giving suid
+root. But that doesn't mean it is fully secure.
+
+* Compiling
+
+ $ make
+ $ sudo make install
+
+* Usage
+
+ $ separate-ns --bind something=/tmp/myprivate-something --bind other=/tmp/x command arg arg
+
+* Configuration
+
+Valid targets are configured using symlinks in /etc/separate-ns/. E.g to allow:
+ $ separate-ns --bind foo=/tmp/x bash
+there must be a symlink in /etc/separate-ns/ named foo, pointing to
+the actual mountpoint. So if /etc/separate-ns/foo is a symlink to
+/var/foo the command would run bash in a separate filesystem namespace
+that has an extra bind mount at /var/foo pointing to /tmp/x
+
