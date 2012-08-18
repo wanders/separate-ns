@@ -25,16 +25,12 @@
 #include <string.h>
 #include <limits.h>
 #include <unistd.h>
-#include <sys/wait.h>
-#include <errno.h>
 #include <sched.h>
 #include <sys/mount.h>
 
 #define MAX_BINDS 32
 
 #define streq(a,b) (!strcmp((a),(b)))
-
-char stack[1048576];
 
 struct childargs {
 	int bindcount;
@@ -46,37 +42,6 @@ struct childargs {
 	int origuid;
 };
 
-static int child(void *_a)
-{
-	struct childargs *args = _a;
-	int i, r;
-
-	for (i = 0; i < args->bindcount; i++) {
-		r = mount(args->binds[i].source, args->binds[i].mountpoint, "bind", MS_BIND, "");
-		if (r < 0) {
-			perror("mount");
-			return EXIT_FAILURE;
-		}
-	}
-
-	/* error checking bitte! */
-	r = setuid(args->origuid);
-	if (r < 0) {
-		perror("setuid");
-		return EXIT_FAILURE;
-	}
-	r = seteuid(args->origuid);
-	if (r < 0) {
-		perror("seteuid");
-		return EXIT_FAILURE;
-	}
-
-	setenv("SEPARATE_NS", "1", 1);
-
-	execvp(args->argv[0], args->argv);
-	perror("execvp");
-	return 0;
-}
 
 static void parse_args(struct childargs *args, int argc, char **argv)
 {
@@ -132,7 +97,7 @@ static void parse_args(struct childargs *args, int argc, char **argv)
 int main(int argc, char **argv)
 {
 	struct childargs args = {0};
-	int r, status;
+	int r, i;
 
 	parse_args(&args, argc, argv);
 
@@ -144,22 +109,35 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	r = clone(child, &stack[sizeof(stack)-1], CLONE_NEWNS | SIGCHLD, &args);
+	r = unshare(CLONE_NEWNS);
 	if (r < 0) {
-		perror("clone");
+		perror("unshare");
 		return EXIT_FAILURE;
+	}
+
+	for (i = 0; i < args.bindcount; i++) {
+		r = mount(args.binds[i].source, args.binds[i].mountpoint, "bind", MS_BIND, "");
+		if (r < 0) {
+			perror("mount");
+			return EXIT_FAILURE;
+		}
 	}
 
 	/* need no root no longer */
-	setuid(args.origuid);
-	seteuid(args.origuid);
-
-	r = waitpid(r, &status, 0);
+	r = setuid(args.origuid);
 	if (r < 0) {
-		perror("waitpid");
+		perror("setuid");
+		return EXIT_FAILURE;
+	}
+	r = seteuid(args.origuid);
+	if (r < 0) {
+		perror("seteuid");
 		return EXIT_FAILURE;
 	}
 
-	r = WEXITSTATUS(status);
-	return r;
+	setenv("SEPARATE_NS", "1", 1);
+
+	execvp(args.argv[0], args.argv);
+	perror("execvp");
+	return EXIT_FAILURE;
 }
