@@ -8,7 +8,7 @@ separate-ns: separate-ns.c
 
 .PHONY: install
 install: separate-ns
-	$(INSTALL) -d $(DESTDIR)$(PREFIX)
+	$(INSTALL) -d $(DESTDIR)$(PREFIX)/bin
 	$(INSTALL) --mode 4755 separate-ns $(DESTDIR)$(PREFIX)/bin
 
 .PHONY: clean
