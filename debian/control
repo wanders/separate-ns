@@ -1,0 +1,15 @@
+Source: separate-ns
+Section: utils
+Priority: extra
+Maintainer: Anders Waldenborg <anders@0x63.nu>
+Build-Depends: debhelper (>=9)
+Standards-Version: 3.9.5
+Homepage: https://github.com/wanders/separate-ns
+
+Package: separate-ns
+Architecture: any
+Multi-Arch: foreign
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Description: Util for running commands in a separate Linux filesystem namespace
+ Runs a command in a separate Linux filesystem namespace, possibly doing
+ a bunch of bind mounts first.
