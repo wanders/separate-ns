@@ -115,6 +115,12 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
+	r = mount("", "/", "", MS_REC | MS_SLAVE, "");
+	if (r < 0) {
+		perror("root remount");
+		return EXIT_FAILURE;
+	}
+
 	for (i = 0; i < args.bindcount; i++) {
 		r = mount(args.binds[i].source, args.binds[i].mountpoint, "bind", MS_BIND, "");
 		if (r < 0) {
